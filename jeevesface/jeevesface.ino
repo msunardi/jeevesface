@@ -56,6 +56,8 @@
 Adafruit_8x8matrix matrix[4] = { // Array of Adafruit_8x8matrix objects
   Adafruit_8x8matrix(), Adafruit_8x8matrix(),
   Adafruit_8x8matrix(), Adafruit_8x8matrix() };
+#define EYE_MIN              1
+#define EYE_MAX              5
 
 // Rather than assigning matrix addresses sequentially in a loop, each
 // has a spot in this array.  This makes it easier if you inadvertently
@@ -571,20 +573,21 @@ void serialEvent() {
       char* separator = strchr(command, ':');
       if (separator != 0) {
         *separator = 0;
-        int xpos = atoi(command);
-        inX = xpos;
+        int xpos = atoi(command);         
+        inX = constrain(xpos, EYE_MIN, EYE_MAX);
         ++separator;
         int ypos = atoi(separator);
-        inY = ypos;
+        inY = constrain(ypos, EYE_MIN, EYE_MAX);
         Serial.print("xpos/ypos: ");
-        Serial.print(xpos);
+        Serial.print(inX);
         Serial.print("/");
-        Serial.println(ypos);
+        Serial.println(inY);
       }
       command = strtok(0, "&");
     }
   }
 }
+
 
 void changeFaceState() {
   Serial.print("Current face state: ");
