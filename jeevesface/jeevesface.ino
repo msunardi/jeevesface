@@ -406,14 +406,18 @@ uint8_t
   mouthCountdown =  10, // Countdown to next mouth change
   faceState = 0,
   eyeState = 0,
+  eyeClose = 0,
   pupilSize = 2;
 int8_t
   eyeX = 3, eyeY = 3,   // Current eye position
   newX = 3, newY = 3,   // Next eye position
-  dX   = 0, dY   = 0;   // Distance from prior to new position
+  dX   = 0, dY   = 0,   // Distance from prior to new position
+  tX   = 0, tY   = 0,
+  inX  = 3, inY  = 0;   // user-defined positions
 
 int inputChar = 0;
 boolean stringComplete = false;
+boolean wanderingEye = true;
 
 void setup() {
 
@@ -443,14 +447,14 @@ void loop() {
   // When counting down to the next blink, show the eye in the fully-
   // open state.  On the last few counts (during the blink), look up
   // the corresponding bitmap index.
-  if (eyeState == 0) {
+  if (eyeClose == 0) {
     matrix[MATRIX_EYES].drawBitmap(0, 0,
       blinkImg[
         (blinkCountdown < sizeof(blinkIndex)) ? // Currently blinking?
         blinkIndex[blinkCountdown] :            // Yes, look up bitmap #
         0                                       // No, show bitmap 0
       ], 8, 8, LED_ON);
-  } else if (eyeState == 1) {
+  } else if (eyeClose == 1) {
     matrix[MATRIX_EYES].drawBitmap(0, 0,
       relaxImg[
         (blinkCountdown < sizeof(relaxIndex)) ? // Currently blinking?
@@ -469,23 +473,34 @@ void loop() {
 //      newX - (dX * gazeCountdown / gazeFrames),
 //      newY - (dY * gazeCountdown / gazeFrames),
 //      pupilSize, pupilSize, LED_OFF);
+    tX = dX * gazeCountdown / gazeFrames;
+    tY = dY * gazeCountdown / gazeFrames;
     matrix[MATRIX_EYES].fillCircle(
       newX - (dX * gazeCountdown / gazeFrames),
       newY - (dY * gazeCountdown / gazeFrames),
       pupilSize, LED_OFF);
+    Serial.print("eye dx/dy: ");
+    Serial.print(dX);
+    Serial.print("/");
+    Serial.print(dY);
+    Serial.print(" | tx/ty: ");
+    Serial.print(tX);
+    Serial.print("/");
+    Serial.println(tY);
     if(gazeCountdown == 0) {    // Last frame?
       eyeX = newX; eyeY = newY; // Yes.  What's new is old, then...
       do { // Pick random positions until one is within the eye circle
          
-        if (eyeState == 0) {
+        if (eyeClose == 0) {
           newY = random(7);
           newX = random(7);
-        } else if (eyeState == 1) {          
-          newX = random(3, 7);
+        } else if (eyeClose == 1) {          
+          newX = random(7);
           newY = random(4, 7);
-        } else {
-          newY = random(7);
-          newX = random(7);
+        } 
+        if (eyeState == 2) {           
+          newY = inY;
+          newX = inX;
         }
         dX   = newX - 3;  dY   = newY - 3;
       } while((dX * dX + dY * dY) >= 10);      // Thank you Pythagoras
@@ -531,8 +546,11 @@ void drawMouth(const uint8_t *img) {
   }
 }
 
-void serialEvent() {
-  if(Serial.available()) {
+void serialEvent() { 
+  int input_size = 3
+  ;
+  if(Serial.available() == 1) {
+    
     char inChar = (char)Serial.read();
     inputChar = inChar;
     changeFaceState();
@@ -541,6 +559,30 @@ void serialEvent() {
     // if (inChar == '\n') {
     //   stringComplete = true;
     // }
+  } else if (Serial.available() >= input_size) {
+//    int input_size = 3;
+    eyeState = 2;
+    char input[input_size + 1];
+    Serial.readBytes(input, input_size);
+    input[input_size] = 0;
+    char* command = strtok(input, "&");
+    while(command != 0)
+    {
+      char* separator = strchr(command, ':');
+      if (separator != 0) {
+        *separator = 0;
+        int xpos = atoi(command);
+        inX = xpos;
+        ++separator;
+        int ypos = atoi(separator);
+        inY = ypos;
+        Serial.print("xpos/ypos: ");
+        Serial.print(xpos);
+        Serial.print("/");
+        Serial.println(ypos);
+      }
+      command = strtok(0, "&");
+    }
   }
 }
 
@@ -548,25 +590,25 @@ void changeFaceState() {
   Serial.print("Current face state: ");
   Serial.println(faceState);
   switch (inputChar) {
-    case 'x':
-      eyeState = 0;
+    case 'x': // fully open eyes
+      eyeClose = 0;
       break;
-    case 's':
-      eyeState = 1;
+    case 's': // slightly closed eyes
+      eyeClose = 1;
       break;
     case 'u':
-      faceState = 3;
+      eyeState = 0;
       break;
     case 'd':
-      faceState = 4;
+      eyeState = 2;
       break;
     case 'l':
       faceState = 5;
       break;
-    case 'r':
+    case 'r': // default mouth/smile
       faceState = 6;
       break;
-    case 'f':
+    case 'f': // frown mouth
       faceState = 7;
       break;
     default:
