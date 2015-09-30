@@ -150,6 +150,16 @@ static const uint8_t PROGMEM // Bitmaps are stored in program memory
     B01111110,
     B00000000,
     B00000000 } },
+    
+    closedImg[][8] = {    // Eye animation frames
+  { B00000000,         // slightly open eye
+    B00000000,
+    B00000000,
+    B00000000,
+    B11000011,
+    B01111110,
+    B00000000,
+    B00000000 } },
   // mouthImg[][24] = {                 // Mouth animation frames
   // { B00000000, B00000000, B00000000, // Mouth position A
   //   B00000000, B00000000, B00000000,
@@ -406,6 +416,7 @@ uint8_t
   gazeFrames = defaultGazeFrames,
   mouthPos       =   0, // Current image number for mouth
   mouthCountdown =  10, // Countdown to next mouth change
+  mouthState = 255,
   faceState = 0,
   eyeState = 0,
   eyeClose = 0,
@@ -463,13 +474,20 @@ void loop() {
         relaxIndex[blinkCountdown] :            // Yes, look up bitmap #
         0                                       // No, show bitmap 0
       ], 8, 8, LED_ON);
+  } else if (eyeClose == 2) {
+    matrix[MATRIX_EYES].drawBitmap(0, 0,
+      closedImg[0], 8, 8, LED_ON);  // There's only one frame
   }
+  
   // Decrement blink counter.  At end, set random time for next blink.
   if(--blinkCountdown == 0) blinkCountdown = random(5, 180);
 
   // Add a pupil (2x2 black square) atop the blinky eyeball bitmap.
   // Periodically, the pupil moves to a new position...
   if(--gazeCountdown <= gazeFrames) {
+//    Serial.print(gazeCountdown);
+//    Serial.print(" | ");
+//    Serial.println(gazeFrames);
     // Eyes are in motion - draw pupil at interim position
 //    matrix[MATRIX_EYES].fillRect(
 //      newX - (dX * gazeCountdown / gazeFrames),
@@ -481,14 +499,14 @@ void loop() {
       newX - (dX * gazeCountdown / gazeFrames),
       newY - (dY * gazeCountdown / gazeFrames),
       pupilSize, LED_OFF);
-    Serial.print("eye dx/dy: ");
-    Serial.print(dX);
-    Serial.print("/");
-    Serial.print(dY);
-    Serial.print(" | tx/ty: ");
-    Serial.print(tX);
-    Serial.print("/");
-    Serial.println(tY);
+//    Serial.print("eye dx/dy: ");
+//    Serial.print(dX);
+//    Serial.print("/");
+//    Serial.print(dY);
+//    Serial.print(" | tx/ty: ");
+//    Serial.print(tX);
+//    Serial.print("/");
+//    Serial.println(tY);
     if(gazeCountdown == 0) {    // Last frame?
       eyeX = newX; eyeY = newY; // Yes.  What's new is old, then...
       do { // Pick random positions until one is within the eye circle
@@ -512,6 +530,10 @@ void loop() {
       gazeCountdown = random(gazeFrames, 120); // Count to end of next movement
     }
   } else {
+//    Serial.println("not in motion");
+//    Serial.print(gazeCountdown);
+//    Serial.print(" / ");
+//    Serial.println(gazeFrames);
     // Not in motion yet -- draw pupil at current static position
     //matrix[MATRIX_EYES].fillRect(eyeX, eyeY, pupilSize, pupilSize, LED_OFF);
     matrix[MATRIX_EYES].fillCircle(eyeX, eyeY, pupilSize, LED_OFF);
@@ -523,14 +545,19 @@ void loop() {
   } else {
     drawMouth(mouthImg[mouthPos]);
   }
-  if(--mouthCountdown == 0) {
-    mouthPos = random(6); // Random image
-    // If the 'neutral' position was chosen, there's a 1-in-5 chance we'll
-    // select a longer hold time.  This gives the appearance of periodic
-    // pauses in speech (e.g. between sentences, etc.).
-    mouthCountdown = ((mouthPos == 0) && (random(5) == 0)) ?
-      random(10, 40) : // Longer random duration
-      random(2, 8);    // Shorter random duration
+  if (mouthState==255) {
+    if(--mouthCountdown == 0) {
+      mouthPos = random(6); // Random image
+      // If the 'neutral' position was chosen, there's a 1-in-5 chance we'll
+      // select a longer hold time.  This gives the appearance of periodic
+      // pauses in speech (e.g. between sentences, etc.).
+      mouthCountdown = ((mouthPos == 0) && (random(5) == 0)) ?
+        random(10, 40) : // Longer random duration
+        random(2, 8);    // Shorter random duration
+    }
+  }
+  else {
+    mouthPos = mouthState-1;
   }
 
   // Refresh all of the matrices in one quick pass
@@ -556,7 +583,7 @@ void serialEvent() {
     char inChar = (char)Serial.read();
     inputChar = inChar;
     changeFaceState();
-    Serial.println(inputChar);
+//    Serial.println(inputChar);
 
     // if (inChar == '\n') {
     //   stringComplete = true;
@@ -564,6 +591,8 @@ void serialEvent() {
   } else if (Serial.available() >= input_size) {
 //    int input_size = 3;
     eyeState = 2;
+    gazeCountdown = 10;  // immediately change to this state
+    gazeFrames = 10;
     char input[input_size + 1];
     Serial.readBytes(input, input_size);
     input[input_size] = 0;
@@ -584,42 +613,81 @@ void serialEvent() {
         Serial.println(inY);
       }
       command = strtok(0, "&");
+//      Serial.println("tick");
     }
   }
 }
 
 
 void changeFaceState() {
-  Serial.print("Current face state: ");
-  Serial.println(faceState);
+//  Serial.print("Current face state: ");
+//  Serial.println(faceState);
   switch (inputChar) {
-    case 'x': // fully open eyes
+    case 'q': // fully open eyes
       eyeClose = 0;
+      Serial.println("Fully open eyes");
       break;
-    case 's': // slightly closed eyes
+    case 'w': // slightly closed eyes
+      Serial.println("Slightly closed eyes");
       eyeClose = 1;
       break;
-    case 'u':
-      eyeState = 0;
+    case 'e': // fully closed eyes
+      Serial.println("Fully closed eyes");
+      eyeClose = 2;
       break;
-    case 'd':
-      eyeState = 2;
+    case 'a':
+      Serial.println("Random pupil movements");
+      eyeState = 0;  // random pupil movement
       break;
-    case 'l':
-      faceState = 5;
+    case 's':
+      Serial.println("Manual pupil control");
+      eyeState = 2;  // manual pupil control
       break;
     case 'r': // default mouth/smile
+      Serial.println("Default mouth shape");
       faceState = 6;
       break;
     case 'f': // frown mouth
+      Serial.println("Frowning mouth shape");
       faceState = 7;
       break;
+    case 'm':
+      Serial.println("Random rambling");
+      mouthState = 255;  // random mouth mode
+      break;
+    case 'i':
+      Serial.println("Mouth pose A");
+      mouthState = 1;   // A
+      break;
+    case 'o':
+      Serial.println("Mouth pose B");
+      mouthState = 2;   // B
+      break;
+    case 'p':
+      Serial.println("Mouth pose C");
+      mouthState = 3;   // C
+      break;
+    case 'j':
+      Serial.println("Mouth pose D");
+      mouthState = 4;   // D
+      break;
+    case 'k':
+      Serial.println("Mouth pose E");
+      mouthState = 5;   // E
+      break;
+    case 'l':
+      Serial.println("Mouth pose F");
+      mouthState = 6;   // F
+      break;
     default:
+      Serial.println("(Default) Random eye and mouth movements");
       faceState = 0;
-      eyeState = 0;
+      eyeClose = 0;
+      eyeState = 0;      
+      mouthState = 255;
       break;
   }
   // stringComplete = false;
-  Serial.print("New face state: ");
-  Serial.println(faceState); 
+//  Serial.print("New face state: ");
+//  Serial.println(faceState); 
 }
