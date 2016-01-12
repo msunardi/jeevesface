@@ -432,6 +432,7 @@ int8_t
 int inputChar = 0;
 boolean stringComplete = false;
 boolean wanderingEye = true;
+boolean changeGaze = false;
 
 void setup() {
 
@@ -469,10 +470,10 @@ void loop() {
         blinkIndex[blinkCountdown] :            // Yes, look up bitmap #
         0                                       // No, show bitmap 0
       ], 8, 8, LED_ON);
-      if (blinkCountdown < sizeof(blinkIndex)) {
-        Serial.print("blinkIndex: ");
-        Serial.println(blinkIndex[blinkCountdown]);
-      }
+//      if (blinkCountdown < sizeof(blinkIndex)) {
+//        Serial.print("blinkIndex: ");
+//        Serial.println(blinkIndex[blinkCountdown]);
+//      }
   } else if (eyeClose == 1) {
     matrix[MATRIX_EYES].drawBitmap(0, 0,
       relaxImg[
@@ -570,20 +571,21 @@ void loop() {
   // Refresh all of the matrices in one quick pass
   for(uint8_t i=0; i<4; i++) matrix[i].writeDisplay();
 
-  delay(100); // ~50 FPS
+  delay(20); // ~50 FPS
   
 }
 
 void normalEyes() {
+//  Serial.print(gazeCountdown);
+//  Serial.print(" | ");
+//  Serial.println(gazeFrames);
   if(--gazeCountdown <= gazeFrames) {
-    Serial.print("gazeCountdown <= gazeFrames");
-    Serial.println(gazeCountdown);
-    //Serial.print(" | ");
-//    Serial.println(gazeFrames);
+//    Serial.print("gazeCountdown <= gazeFrames : ");
+    
     // Eyes are in motion - draw pupil at interim position
 
-    tX = dX * gazeCountdown / gazeFrames;
-    tY = dY * gazeCountdown / gazeFrames;
+//    tX = dX * gazeCountdown / gazeFrames;
+//    tY = dY * gazeCountdown / gazeFrames;
     matrix[MATRIX_EYES].fillCircle(
       newX - (dX * gazeCountdown / gazeFrames),
       newY - (dY * gazeCountdown / gazeFrames),
@@ -596,47 +598,57 @@ void normalEyes() {
 //    Serial.print(tX);
 //    Serial.print("/");
 //    Serial.println(tY);
+    
     if(gazeCountdown == 0) {    // Last frame?
-      eyeX = newX; eyeY = newY; // Yes.  What's new is old, then...
+//      Serial.println("Woot!");
+      
+      eyeX = newX; eyeY = newY; // Yes.  What's new is old, then...    
       do { // Pick random positions until one is within the eye circle
-         
+//        Serial.print(".");
         if (eyeClose == 0) {
           newY = random(7);
           newX = random(7);
         } else if (eyeClose == 1) {          
           newX = random(7);
           newY = random(4, 7);
-        } 
-        if (eyeState == 2) {           
+        }
+        if (eyeState == 2) {
           newY = inY;
           newX = inX;
+          break;
         }
         dX   = newX - 3;  dY   = newY - 3;
       } while((dX * dX + dY * dY) >= 10);      // Thank you Pythagoras
+//      Serial.println();      
       dX            = newX - eyeX;             // Horizontal distance to move
       dY            = newY - eyeY;             // Vertical distance to move
       gazeFrames    = random(3, 15);           // Duration of eye movement
-      gazeCountdown = random(gazeFrames, 120); // Count to end of next movement
+      gazeCountdown = random(gazeFrames, 120); // Count to end of next movement      
     }
   } else {
     // Not in motion yet -- draw pupil at current static position
     //matrix[MATRIX_EYES].fillRect(eyeX, eyeY, pupilSize, pupilSize, LED_OFF);
     if(--gazeJitterCountdown == 0) {
-      Serial.println("---");
-      Serial.print(eyeX);
-      Serial.print("/");
-      Serial.print(eyeY);
-      Serial.print(" --> ");
+//      Serial.println("---");
+//      Serial.print(eyeX);
+//      Serial.print("/");
+//      Serial.print(eyeY);
+//      Serial.print(" --> ");
       eyeX = eyeX + random(2) - random(2);
       eyeY = eyeY + random(2) - random(2);
       constrain(eyeX, 2, 6);
       constrain(eyeY, 2, 6);
-      Serial.print(eyeX);
-      Serial.print("/");
-      Serial.println(eyeY);
+//      Serial.print(eyeX);
+//      Serial.print("/");
+//      Serial.println(eyeY);
       gazeJitterCountdown = random(50, 100);
     }
-    Serial.println("Drawing pupil");
+//    Serial.println("Drawing pupil");
+    if(changeGaze) {
+      gazeCountdown = gazeFrames+1;
+      changeGaze=false;
+    }
+    
     matrix[MATRIX_EYES].fillCircle(eyeX, eyeY, pupilSize, LED_OFF);
   }
 }
@@ -664,10 +676,11 @@ void serialEvent() {
     // }
   } else if (Serial.available() >= input_size) {
 //    int input_size = 3;
-    Serial.println("meep!");
+    Serial.println("Change gaze");
     eyeState = 2;
-    gazeCountdown = 10;  // immediately change to this state
-    gazeFrames = 10;
+    changeGaze = true;
+    gazeCountdown = 1;  // immediately change to this state (must be 1 because it'll be decremented)
+    
     char input[input_size + 1];
     Serial.readBytes(input, input_size);
     input[input_size] = 0;
@@ -690,7 +703,7 @@ void serialEvent() {
       command = strtok(0, "&");
 //      Serial.println("tick");
     }
-    blinkCountdown = 10;
+    blinkCountdown = 8;
   }
 }
 
