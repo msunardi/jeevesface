@@ -462,12 +462,17 @@ void loop() {
   // open state.  On the last few counts (during the blink), look up
   // the corresponding bitmap index.
   if (eyeClose == 0) {
+    //Serial.println(blinkCountdown);
     matrix[MATRIX_EYES].drawBitmap(0, 0,
       blinkImg[
         (blinkCountdown < sizeof(blinkIndex)) ? // Currently blinking?
         blinkIndex[blinkCountdown] :            // Yes, look up bitmap #
         0                                       // No, show bitmap 0
       ], 8, 8, LED_ON);
+      if (blinkCountdown < sizeof(blinkIndex)) {
+        Serial.print("blinkIndex: ");
+        Serial.println(blinkIndex[blinkCountdown]);
+      }
   } else if (eyeClose == 1) {
     matrix[MATRIX_EYES].drawBitmap(0, 0,
       relaxImg[
@@ -565,14 +570,15 @@ void loop() {
   // Refresh all of the matrices in one quick pass
   for(uint8_t i=0; i<4; i++) matrix[i].writeDisplay();
 
-  delay(20); // ~50 FPS
+  delay(100); // ~50 FPS
   
 }
 
 void normalEyes() {
   if(--gazeCountdown <= gazeFrames) {
-//    Serial.print(gazeCountdown);
-//    Serial.print(" | ");
+    Serial.print("gazeCountdown <= gazeFrames");
+    Serial.println(gazeCountdown);
+    //Serial.print(" | ");
 //    Serial.println(gazeFrames);
     // Eyes are in motion - draw pupil at interim position
 
@@ -630,6 +636,7 @@ void normalEyes() {
       Serial.println(eyeY);
       gazeJitterCountdown = random(50, 100);
     }
+    Serial.println("Drawing pupil");
     matrix[MATRIX_EYES].fillCircle(eyeX, eyeY, pupilSize, LED_OFF);
   }
 }
@@ -657,9 +664,10 @@ void serialEvent() {
     // }
   } else if (Serial.available() >= input_size) {
 //    int input_size = 3;
+    Serial.println("meep!");
     eyeState = 2;
-    gazeCountdown = gazeFrames;  // immediately change to this state
-    //gazeFrames = 10;
+    gazeCountdown = 10;  // immediately change to this state
+    gazeFrames = 10;
     char input[input_size + 1];
     Serial.readBytes(input, input_size);
     input[input_size] = 0;
@@ -682,6 +690,7 @@ void serialEvent() {
       command = strtok(0, "&");
 //      Serial.println("tick");
     }
+    blinkCountdown = 10;
   }
 }
 
@@ -745,6 +754,10 @@ void changeFaceState() {
     case 'l':
       Serial.println("Mouth pose F");
       mouthState = 6;   // F
+      break;
+    case 'b':
+      Serial.println("Blink!");
+      blinkCountdown = sizeof(blinkIndex) + 1;
       break;
     default:
       Serial.println("(Default) Random eye and mouth movements");
