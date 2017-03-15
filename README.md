@@ -29,7 +29,6 @@ Adapted from [AdaFruit](https://learn.adafruit.com/animating-multiple-led-backpa
         rostopic pub /face std_msgs/String "{data: 'p'}" --once
 
         OR
-
         rostopic pub /face std_msgs/String p --once
         </code>
 
@@ -40,13 +39,12 @@ Adapted from [AdaFruit](https://learn.adafruit.com/animating-multiple-led-backpa
       - `'e'`: eyes fully closed (one pixel wide)
     - Sample usage - same as above
   - For eye positions:
-    - Format: `'x:y'`
+    - Format: `'x:y'` - positions is from top left to bottom right (seen from front)
       - `x`: integer [1-5] - horizontal position of pupil
       - `y`: integer [1-5] - vertical position of pupil
     - Sample usage - publish topic from command line:
 
         <code>
         rostopic pub /face std_msgs/String "{data: '1:3'}" --once
-
         rostopic pub /face std_msgs/String "{data: '4:2'}" --once
         </code>
