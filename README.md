@@ -25,11 +25,11 @@ Adapted from [AdaFruit](https://learn.adafruit.com/animating-multiple-led-backpa
       - `'g'` or other characters: normal/random
     - Sample usage - publish topic from command line:
 
-        <code>
-        rostopic pub /face std_msgs/String "{data: 'p'}" --once<br/>
-        OR<br/>
+        ```
+        rostopic pub /face std_msgs/String "{data: 'p'}" --once
+        OR
         rostopic pub /face std_msgs/String p --once
-        </code>
+        ```
 
   - For eye shapes:
     - Input characters:
@@ -43,7 +43,7 @@ Adapted from [AdaFruit](https://learn.adafruit.com/animating-multiple-led-backpa
       - `y`: integer [1-5] - vertical position of pupil
     - Sample usage - publish topic from command line:
 
-        <code>
-        rostopic pub /face std_msgs/String "{data: '1:3'}" --once<br>
+        ```
+        rostopic pub /face std_msgs/String "{data: '1:3'}" --once
         rostopic pub /face std_msgs/String "{data: '4:2'}" --once
-        </code>
+        ```
