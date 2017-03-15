@@ -352,14 +352,14 @@ void messageCb( const std_msgs::String& toggle_msg){
         *separator = 0;
         str_msg.data = command;
         chatter.publish( &str_msg );
-        int xpos = poscase(atoi(command));
-//        int xpos = atoi(command);         
+//        int xpos = poscase(atoi(command));
+        int xpos = atoi(command);
         inX = constrain(xpos, EYE_MIN, EYE_MAX);
         ++separator;
         str_msg.data = separator;
         chatter.publish( &str_msg );
-        int ypos = poscase(atoi(separator));
-//        int ypos = atoi(separator);
+//        int ypos = poscase(atoi(separator));
+        int ypos = atoi(separator);
         inY = constrain(ypos, EYE_MIN, EYE_MAX);
 //        Serial.print("xpos/ypos: ");
 //        Serial.print(inX);
