@@ -156,7 +156,7 @@ static const uint8_t PROGMEM // Bitmaps are stored in program memory
     B00000000,
     B00000000,
     B00000000,
-    B11000011,
+    B11111111,
     B01111110,
     B00111100,
     B00000000 } },
@@ -883,12 +883,17 @@ void changeFaceState() {
 //  Serial.print("Current face state: ");
 //  Serial.println(faceState);
   switch (inputChar) {
-    case '1':  // one
+    case 'p':  // one
       eyeShape = (eyeShape == 0) ? 1 : 0;
       Serial.println("Eye shape toggle");
       break;
     case '=':
       pupilSize = (pupilSize >= 4) ? 1 : pupilSize + 1;
+      Serial.print("Pupil size: ");
+      Serial.println(pupilSize);
+      break;
+    case '-':
+      pupilSize = (pupilSize <= 1) ? 4 : pupilSize - 1;
       Serial.print("Pupil size: ");
       Serial.println(pupilSize);
       break;
@@ -936,15 +941,15 @@ void changeFaceState() {
       Serial.println("Random rambling");
       mouthState = 255;  // random mouth mode
       break;
-    case 'i':
+    case 'u':
       Serial.println("Mouth pose A");
       mouthState = 1;   // A
       break;
-    case 'o':
+    case 'i':
       Serial.println("Mouth pose B");
       mouthState = 2;   // B
       break;
-    case 'p':
+    case 'o':
       Serial.println("Mouth pose C");
       mouthState = 3;   // C
       break;
